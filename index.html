@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Simpl Readr</title>
+    <link rel="stylesheet" href="./lib/css/fontawesome.css">
+    <link rel="stylesheet" href="stylesheet.css">
+    <script>if (typeof module === 'object') { window.module = module; module = undefined; }</script>
+    <script src="./lib/js/jquery-3.3.1.min.js"></script>
+    <script src="./functions.js"></script>
+    <script>if (window.module) module = window.module;</script>
+    <style id="ebook-style-target"></style>
+</head>
+<body>
+    <div id="controller-wrap">
+        <div id="controller">
+            <a id="open-book" class="button" href="#"><i class="fas fa-book-open"></i>Open</a>
+            <a id="prev-part" class="button" href="#"><i class="fas fa-arrow-left"></i>Previous</a>
+            <a id="next-part" class="button" href="#"><i class="fas fa-arrow-right"></i>Next</a>
+            <a id="zoom-in" class="button" href="#"><i class="fas fa-search-plus"></i>Zoom In</a>
+            <a id="zoom-out" class="button" href="#"><i class="fas fa-search-minus"></i>Zoom Out</a>
+        </div>
+    </div>
+    <div id="ebook-content-wrap">
+        <div id="ebook-content-target"></div>
+    </div>
+</body>
+</html>

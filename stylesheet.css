@@ -1,0 +1,54 @@
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+#controller-wrap {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    display: block;
+    margin: 0;
+    padding: 0;
+    background-color: #ddd;
+}
+
+#controller {
+    display: flex;
+    margin: 0 auto;
+    padding: 0.75rem;
+    width: 50rem;
+    height: 2rem;
+    justify-content: space-around;
+}
+
+#controller a {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.1rem;
+    font-weight: 400;
+    text-decoration: none;
+}
+
+#controller a i {
+    font-size: 1.3rem;
+    margin-right: 0.35rem;
+}
+
+.button {
+    padding: 0.2rem;
+    color: #000;
+    box-shadow: 0rem 0.2rem 0rem 0rem #000;
+    transition: all 150ms;
+}
+
+.button:hover {
+    box-shadow: 0rem 0.3rem 0.2rem 0rem #000;
+}
+
+#ebook-content-wrap {
+    display: block;
+    margin: 5rem 5rem 2rem 5rem;
+    padding: 0;
+    overflow-wrap: break-word;
+}
