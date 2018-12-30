@@ -5,10 +5,12 @@ const path = require('path');
 
 const electron = require('electron');
 const {app, BrowserWindow, ipcMain} = electron;
+const ejs = require('ejs');
 
 const EPUB = require('./epub.js').EPUB;
 
 let mainWindow;
+let imageWindows = [];
 let epub;
 
 app.on('ready', () => {
@@ -23,6 +25,12 @@ app.on('ready', () => {
         protocol: 'file:',
         slashes: true
     }));
+
+    mainWindow.on('close', () => {
+        for (let i in imageWindows) {
+            imageWindows[i].close();
+        }
+    });
 
     mainWindow.on('closed', () => {
         app.quit();
@@ -40,3 +48,21 @@ ipcMain.on('loadBook', (event, arg) => {
 ipcMain.on('getNextPart', (event, arg) => event.sender.send('getNextPartResult', epub.nextPart()));
 
 ipcMain.on('getPrevPart', (event, arg) => event.sender.send('getPrevPartResult', epub.prevPart()));
+
+ipcMain.on('openImageInNewWindow', (event, arg) => {
+    let imageWindow = new BrowserWindow({
+        minWidth: 200,
+        minHeight: 200,
+        center: true
+    });
+
+    ejs.renderFile(path.join(__dirname, 'views', 'image.ejs'), {src: arg}, (err, str) => {
+        if (!err) {
+            imageWindow.loadURL('data:text/html;charset=utf-8,' + encodeURI(str));
+        }
+    });
+
+    imageWindow.on('close', () => imageWindows.splice(imageWindows.indexOf(imageWindow), 1));
+
+    imageWindows.push(imageWindow);
+});

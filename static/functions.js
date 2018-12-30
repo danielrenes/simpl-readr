@@ -119,6 +119,12 @@ $(document).ready(() => {
         ebookContentTarget.empty();
         ebookContentTarget.append(html);
     }
+
+    $(document).on('click', 'img', e => {
+        if (e.ctrlKey) {
+            ipcRenderer.send('openImageInNewWindow', e.target.src);
+        }
+    });
 });
 
 function loadBook() {

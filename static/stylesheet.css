@@ -52,3 +52,7 @@ html, body {
     padding: 0;
     overflow-wrap: break-word;
 }
+
+img {
+    cursor: pointer;
+}
