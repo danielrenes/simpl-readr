@@ -14,7 +14,7 @@ function EPUB(filepath) {
     this.images = [];
     this.currentPart = -1;
 
-    let partsOrder = [];
+    let rootfileFolder = undefined;
 
     this.parse = () => {
         let zip = new AdmZip(this.filepath);
@@ -30,6 +30,10 @@ function EPUB(filepath) {
                         for (let i in rootfiles) {
                             if (filter(rootfiles[i].rootfile, 'media-type') === 'application/oebps-package+xml') {
                                 this.rootfile = filter(rootfiles[i].rootfile, 'full-path');
+                                let separatorIndex = this.rootfile.lastIndexOf('/');
+                                if (separatorIndex > -1) {
+                                    rootfileFolder = this.rootfile.slice(0, separatorIndex);
+                                }
                                 break;
                             }
                         }
@@ -57,13 +61,13 @@ function EPUB(filepath) {
             }
         });
 
-        partsOrder = createPartsOrder();
+        this.parts.sort(partsComparator);
     };
 
     this.nextPart = () => {
         this.currentPart = (this.currentPart + 1) < this.parts.length ? (this.currentPart + 1) : (this.parts.length - 1);
         let zip = new AdmZip(this.filepath);
-        let zipEntry = zip.getEntry(this.parts[partsOrder[this.currentPart]]);
+        let zipEntry = getEntry(zip, this.parts[this.currentPart]);
         let html = zipEntry.getData().toString('utf8');
         return render(html, zip);
     };
@@ -71,7 +75,7 @@ function EPUB(filepath) {
     this.prevPart = () => {
         this.currentPart = (this.currentPart - 1) >= 0 ? (this.currentPart - 1) : 0;
         let zip = new AdmZip(this.filepath);
-        let zipEntry = zip.getEntry(this.parts[partsOrder[this.currentPart]]);
+        let zipEntry = getEntry(zip, this.parts[this.currentPart]);
         let html = zipEntry.getData().toString('utf8');
         return render(html, zip);
     };
@@ -80,11 +84,31 @@ function EPUB(filepath) {
         let styles = [];
         let zip = new AdmZip(this.filepath);
         for (let i in this.stylesheets) {
-            let zipEntry = zip.getEntry(this.stylesheets[i]);
+            let zipEntry = getEntry(zip, this.stylesheets[i]);
             let style = zipEntry.getData().toString('utf8');
             styles.push(style);
         }
         return styles.join('\n');
+    };
+
+    let getEntry = (zip, entryName) => {
+        let entry = zip.getEntry(entryName);
+        if (entry === undefined || entry === null) {
+            entry = zip.getEntry(appendRootFolder(entryName));
+        }
+        return entry;
+    };
+
+    let appendRootFolder = (path) => {
+        if (path.indexOf(rootfileFolder) > -1) {
+            return path;
+        } else {
+            if (path.indexOf('/') === 0) {
+                return rootfileFolder + path;
+            } else {
+                return rootfileFolder + '/' + path;
+            }
+        }
     };
 
     let parseMetadata = (obj) => {
@@ -200,8 +224,8 @@ function EPUB(filepath) {
         dom.window.document.querySelectorAll('link').forEach(e => e.parentNode.removeChild(e));
         dom.window.document.querySelectorAll('img').forEach(e => {
             for (let i in this.images) {
-                if (e.src.indexOf(this.images[i]) > -1) {
-                    let zipEntry = zip.getEntry(this.images[i]);
+                if ((e.src.indexOf(this.images[i]) > -1) || (this.images[i].indexOf(e.src) > -1)) {
+                    let zipEntry = getEntry(zip, this.images[i]);
                     let fileformat = path.extname(this.images[i]).replace('.', '');
                     let img = zipEntry.getData().toString('binary');
                     let base64Encoded = Buffer.from(img, 'binary').toString('base64');
@@ -213,42 +237,17 @@ function EPUB(filepath) {
         return dom.serialize();
     }
 
-    let createPartsOrder = () => {
-        let order = [];
-        let numberOfDigits = [];
-        let values = [];
-        for (let i in this.parts) {
-            let filename = this.parts[i].substring(this.parts[i].lastIndexOf('/') + 1, this.parts[i].lastIndexOf('.'));
-            let number = filename.replace(/\D/g,'');
-            if (number.length !== 0) {
-                numberOfDigits.push(number.length);
-                values.push(parseInt(number));
+    let partsComparator = (entryName1, entryName2) => {
+        let res1 = entryName1.match(/\d*/g).filter(e => e !== '');
+        let res2 = entryName2.match(/\d*/g).filter(e => e !== '');
+        for (let i in res1) {
+            let diff = parseInt(res1[i]) - parseInt(res2[i]);
+            if (diff !== 0) {
+                return diff;
             }
         }
-
-        let sameLength = true;
-        for(let i in numberOfDigits) {
-            for (let j in numberOfDigits) {
-                if(numberOfDigits[i] !== numberOfDigits[j]) {
-                    sameLength = false;
-                }
-            }
-        }
-
-        if (sameLength) {
-            for (let i in this.parts) {
-                order.push(i);
-            }
-        } else {
-            let valuesCopy = values.slice(0);
-            values.sort((a, b) => a - b);
-            for (let i in values) {
-                order.push(valuesCopy.indexOf(values[i]));
-            }
-        }
-
-        return order;
-    }
+        return 0;
+    };
 }
 
 module.exports.EPUB = EPUB;
