@@ -14,6 +14,8 @@ function EPUB(filepath) {
     this.images = [];
     this.currentPart = -1;
 
+    let partsOrder = [];
+
     this.parse = () => {
         let zip = new AdmZip(this.filepath);
         let zipEntries = zip.getEntries();
@@ -40,7 +42,10 @@ function EPUB(filepath) {
                         let manifest = parseManifest(res.package.manifest);
                         for (let i in manifest) {
                             if (manifest[i]['media-type'].indexOf('html') > -1) {
-                                this.parts.push(manifest[i].href);
+                                let number = manifest[i].href.replace(/\D/g,'');
+                                if (number.length !== 0) {
+                                    this.parts.push(manifest[i].href);
+                                }
                             } else if (manifest[i]['media-type'].indexOf('css') > -1) {
                                 this.stylesheets.push(manifest[i].href);
                             } else if (manifest[i]['media-type'].indexOf('image') > -1) {
@@ -51,12 +56,14 @@ function EPUB(filepath) {
                 });
             }
         });
+
+        partsOrder = createPartsOrder();
     };
 
     this.nextPart = () => {
         this.currentPart = (this.currentPart + 1) < this.parts.length ? (this.currentPart + 1) : (this.parts.length - 1);
         let zip = new AdmZip(this.filepath);
-        let zipEntry = zip.getEntry(this.parts[this.currentPart]);
+        let zipEntry = zip.getEntry(this.parts[partsOrder[this.currentPart]]);
         let html = zipEntry.getData().toString('utf8');
         return render(html, zip);
     };
@@ -64,7 +71,7 @@ function EPUB(filepath) {
     this.prevPart = () => {
         this.currentPart = (this.currentPart - 1) >= 0 ? (this.currentPart - 1) : 0;
         let zip = new AdmZip(this.filepath);
-        let zipEntry = zip.getEntry(this.parts[this.currentPart]);
+        let zipEntry = zip.getEntry(this.parts[partsOrder[this.currentPart]]);
         let html = zipEntry.getData().toString('utf8');
         return render(html, zip);
     };
@@ -204,6 +211,43 @@ function EPUB(filepath) {
             }
         });
         return dom.serialize();
+    }
+
+    let createPartsOrder = () => {
+        let order = [];
+        let numberOfDigits = [];
+        let values = [];
+        for (let i in this.parts) {
+            let filename = this.parts[i].substring(this.parts[i].lastIndexOf('/') + 1, this.parts[i].lastIndexOf('.'));
+            let number = filename.replace(/\D/g,'');
+            if (number.length !== 0) {
+                numberOfDigits.push(number.length);
+                values.push(parseInt(number));
+            }
+        }
+
+        let sameLength = true;
+        for(let i in numberOfDigits) {
+            for (let j in numberOfDigits) {
+                if(numberOfDigits[i] !== numberOfDigits[j]) {
+                    sameLength = false;
+                }
+            }
+        }
+
+        if (sameLength) {
+            for (let i in this.parts) {
+                order.push(i);
+            }
+        } else {
+            let valuesCopy = values.slice(0);
+            values.sort((a, b) => a - b);
+            for (let i in values) {
+                order.push(valuesCopy.indexOf(values[i]));
+            }
+        }
+
+        return order;
     }
 }
 
