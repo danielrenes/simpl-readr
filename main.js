@@ -19,7 +19,7 @@ app.on('ready', () => {
     });
 
     mainWindow.loadURL(url.format({
-        pathname: path.join(__dirname, 'index.html'),
+        pathname: path.join(__dirname, 'views', 'index.html'),
         protocol: 'file:',
         slashes: true
     }));
