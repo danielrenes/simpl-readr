@@ -4,6 +4,23 @@ const electron = require('electron');
 const { ipcRenderer } = electron;
 const { dialog } = electron.remote
 
+const shortcuts = {
+    'open': 'CTRL+O',
+    'next': 'ARROW_RIGHT',
+    'prev': 'ARROW_LEFT',
+    'zoomIn': 'CTRL+ARROW_UP',
+    'zoomOut': 'CTRL+ARROW_DOWN'
+};
+
+const keyCodes = {
+    'CTRL': 17,
+    'O': 79,
+    'ARROW_UP': 38,
+    'ARROW_DOWN': 40,
+    'ARROW_LEFT': 37,
+    'ARROW_RIGHT': 39
+};
+
 $(document).ready(() => {
     let ebookStyleTarget = $('#ebook-style-target');
     let open = $('#open-book');
@@ -13,22 +30,90 @@ $(document).ready(() => {
     let zoomOut = $('#zoom-out');
     let ebookContentTarget = $('#ebook-content-target');
 
-    open.click(e => loadBook().then(result => {
-        if (typeof result === 'undefined') {
-            return;
+    const handlers = {
+        'OPEN': () => {
+            loadBook().then(result => {
+                if (typeof result === 'undefined') {
+                    return;
+                }
+                ebookStyleTarget.empty();
+                ebookStyleTarget.append(result.styles);
+                refreshContent(result.firstPart);
+            });
+        },
+        'PREV': () => getPrevPart().then(result=> refreshContent(result)),
+        'NEXT': () => getNextPart().then(result=> refreshContent(result)),
+        'ZOOM_IN': () => ebookContentTarget.css('zoom', parseFloat(ebookContentTarget.css('zoom')) + 0.1),
+        'ZOOM_OUT': () => ebookContentTarget.css('zoom', parseFloat(ebookContentTarget.css('zoom')) - 0.1)
+    };
+
+    $(document).keydown(e => {
+        let isCtrl = e.ctrlKey;
+        let keyCode = e.keyCode;
+        let length;
+        let command;
+
+        if (isCtrl) {
+            length = e.keyCode === keyCodes.CTRL ? 1 : 2;
+        } else {
+            length = 1;
         }
-        ebookStyleTarget.empty();
-        ebookStyleTarget.append(result.styles);
-        refreshContent(result.firstPart);
-    }));
 
-    next.click(e => getNextPart().then(result=> refreshContent(result)));
+        for (let k in shortcuts) {
+            let keys = shortcuts[k].split('+');
+            let match = (length === keys.length);
 
-    prev.click(e => getPrevPart().then(result => refreshContent(result)));
+            if (match) {
+                for (let i in keys) {
+                    let key = keys[i];
+                    if (key === 'CTRL') {
+                        if (!isCtrl) {
+                            match = false;
+                            break;
+                        }
+                    } else {
+                        if (keyCode !== keyCodes[key]) {
+                            match = false;
+                            break;
+                        }
+                    }
+                }
+            }
 
-    zoomIn.click(e => ebookContentTarget.css('zoom', parseFloat(ebookContentTarget.css('zoom')) + 0.1));
+            if (match) {
+                command = k;
+                break;
+            }
+        }
 
-    zoomOut.click(e => ebookContentTarget.css('zoom', parseFloat(ebookContentTarget.css('zoom')) - 0.1));
+        switch (command) {
+            case 'open':
+                handlers.OPEN();
+                break;
+            case 'prev':
+                handlers.PREV();
+                break;
+            case 'next':
+                handlers.NEXT();
+                break;
+            case 'zoomIn':
+                handlers.ZOOM_IN();
+                break;
+            case 'zoomOut':
+                handlers.ZOOM_OUT();
+                break;
+        }
+    });
+
+    open.click(e => handlers.OPEN());
+
+    next.click(e => handlers.NEXT());
+
+    prev.click(e => handlers.PREV());
+
+    zoomIn.click(e => handlers.ZOOM_IN());
+
+    zoomOut.click(e => handlers.ZOOM_OUT());
 
     function refreshContent(html) {
         ebookContentTarget.empty();

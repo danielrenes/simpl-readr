@@ -223,6 +223,9 @@ function EPUB(filepath) {
         let dom = new JSDOM(html);
         dom.window.document.querySelectorAll('link').forEach(e => e.parentNode.removeChild(e));
         dom.window.document.querySelectorAll('img').forEach(e => {
+            while (e.src.charAt(0) === '.') {
+                e.src = e.src.substr(1);
+            }
             for (let i in this.images) {
                 if ((e.src.indexOf(this.images[i]) > -1) || (this.images[i].indexOf(e.src) > -1)) {
                     let zipEntry = getEntry(zip, this.images[i]);
@@ -235,7 +238,7 @@ function EPUB(filepath) {
             }
         });
         return dom.serialize();
-    }
+    };
 
     let partsComparator = (entryName1, entryName2) => {
         let res1 = entryName1.match(/\d*/g).filter(e => e !== '');
